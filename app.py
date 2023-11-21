@@ -1,5 +1,6 @@
 import io
 import cv2
+import csv
 from fastapi import (
     FastAPI,
     UploadFile,
@@ -8,7 +9,7 @@ from fastapi import (
     status,
     Depends,
 )
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 import mediapipe as mp
@@ -26,7 +27,7 @@ CAR_COLOR = (246, 18, 187)
 app = FastAPI(title="Deteccion y clasificacion de Objetos")
 
 object_predictor = ObjectDetector()
-
+list_predict = []
 def get_object_detector():
     return object_predictor
 
@@ -63,6 +64,19 @@ def detect_objects(
     for result in results:
         bbox = result['bbox']
         name = result['name']
+        score = result['score']
+        date = result['date']
+
+        dict ={
+            "nombre": str(name[0]),
+            "probabilidad": str(score[0]),
+            "punto_x": str(bbox[0]),
+            "punto_y": str(bbox[1]),
+            "alto": str(bbox[2]),
+            "ancho": str(bbox[3]),
+            "fecha": str(date[0]) 
+        }
+        list_predict.append(dict)
 
         if name[0] not in object_count:
             object_count[name[0]] =  1
@@ -119,6 +133,25 @@ def detect_objects(
     image_stream.seek(0)
     
     return Response(content=image_stream.read(), media_type="image/jpeg")
+
+
+@app.get("/reporte csv", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
+def generate_reports(predictor: ObjectDetector = Depends(get_object_detector)):
+    if not list_predict:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se pudo generar el reporte, primero cargue una imagen"
+        )
+
+    csv_file_path = "reporteObjectDetection.csv"
+
+    with open(csv_file_path, mode="w", newline="") as csv_file:
+        fieldnames = list_predict[0].keys()
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(list_predict)
+
+    return FileResponse(csv_file_path, filename="reporteObjectDetection.csv", media_type="text/csv")
 
 if __name__ == "__main__":
     import uvicorn

@@ -25,3 +25,15 @@ Primero levante el archivo *app.py*, y utilice el link que le muestra en consola
 * 127.0.0.0/docs
 
 Utilice el método POST y compruebe los resultados
+
+## GET: reporte csv
+
+Utilice este metodo para obtener un reporte de las siguientes caracteristicas de cada objeto:
+
+* Nombre
+* Probabilidad de que sea el objeto
+* Punto x
+* Punto y
+* Ancho
+* Alto
+* Fecha
